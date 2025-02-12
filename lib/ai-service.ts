@@ -24,7 +24,7 @@ export async function getAIResponse(
     );
 
     if (execution.status === "completed") {
-      return JSON.parse(execution.response);
+      return JSON.parse(execution.responseBody);
     }
 
     throw new Error("AI function execution failed");
