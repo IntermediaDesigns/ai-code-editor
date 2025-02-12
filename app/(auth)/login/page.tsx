@@ -1,90 +1,248 @@
 // app/(auth)/login/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { account } from '../../lib/appwrite';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Alert, AlertDescription } from '../../components/ui/alert';
+import { useState } from "react";
+import { account, ID } from "../../lib/appwrite";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../../components/ui/card";
+import { LogOut, Loader2 } from "lucide-react";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+const LoginPage = () => {
+  const [loggedInUser, setLoggedInUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [error, setError] = useState("");
+  const [isRegister, setIsRegister] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
+  // Register form state
+  const [registerUsername, setRegisterUsername] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+
+  const login = async () => {
     try {
-      await account.createEmailSession(email, password);
-      router.push('/editor');
-      router.refresh();
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError('Invalid email or password');
+      setIsLoading(true);
+      setError("");
+      // First get the user's email using username
+      await account.createEmailPasswordSession(loginEmail, loginPassword);
+      const user = await account.get();
+      setLoggedInUser(user);
+    } catch (error) {
+      setError("Invalid email or password");
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const register = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      await account.create(
+        ID.unique(),
+        registerEmail,
+        registerPassword,
+        registerUsername
+      );
+      await account.createEmailPasswordSession(registerEmail, registerPassword);
+      const user = await account.get();
+      setLoggedInUser(user);
+    } catch (error) {
+      setError("Registration failed. Please try again.");
+      console.error("Register error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      setIsLoading(true);
+      await account.deleteSession("current");
+      setLoggedInUser(null);
+    } catch (error: unknown) {
+      setError("Logout failed");
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (loggedInUser) {
+    return (
+      <Card className="w-full max-w-md mx-auto mt-8">
+        <CardHeader>
+          <CardTitle>Welcome!</CardTitle>
+          <CardDescription>
+            You are logged in as {loggedInUser.name}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            onClick={logout}
+            disabled={isLoading}
+            className="w-full"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging out...
+              </>
+            ) : (
+              <>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="p-8 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold text-center mb-8">Login to AI Code Editor</h1>
-      
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>
+            {isRegister ? "Create Account" : "Welcome Back"}
+          </CardTitle>
+          <CardDescription>
+            {isRegister ? "Sign up for a new account" : "Login to your account"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
-            Email
-          </label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            {isRegister ? (
+              // Register Form
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">
+                    Username
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Choose a username"
+                    value={registerUsername}
+                    onChange={(e) => setRegisterUsername(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1">
-            Password
-          </label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Signing in...' : 'Sign in'}
-        </Button>
-      </form>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">
+                    Password
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="Choose a password"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </>
+            ) : (
+              // Login Form
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-      <p className="mt-4 text-center text-sm">
-        Don't have an account?{' '}
-        <Link href="/register" className="text-blue-500 hover:text-blue-600">
-          Register
-        </Link>
-      </p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">
+                    Password
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="Enter your password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                onClick={isRegister ? register : login}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isRegister ? "Creating account..." : "Logging in..."}
+                  </>
+                ) : isRegister ? (
+                  "Create Account"
+                ) : (
+                  "Login"
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={() => {
+                  setIsRegister(!isRegister);
+                  setError("");
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                {isRegister
+                  ? "Already have an account? Login"
+                  : "Don't have an account? Sign up"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+export default LoginPage;
