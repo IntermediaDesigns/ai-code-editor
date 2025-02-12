@@ -1,9 +1,9 @@
-// app/(auth)/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { account, ID } from "../../lib/appwrite";
+import { account, ID } from "@/app/lib/appwrite";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Alert, AlertDescription } from "../../components/ui/alert";
@@ -18,33 +18,33 @@ import { Loader2 } from "lucide-react";
 
 const LoginPage = () => {
   const router = useRouter();
+  const { checkUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isRegister, setIsRegister] = useState(false);
 
-  // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-
-  // Register form state
   const [registerUsername, setRegisterUsername] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
 
-    const login = async () => {
+  const login = async () => {
     try {
       setIsLoading(true);
       setError("");
+      
       await account.createEmailPasswordSession(loginEmail, loginPassword);
-      router.push('/');
-    } catch (error) {
-      setError("Invalid email or password");
+      await checkUser(); // Check user after session creation
+      router.push('/editor');
+    } catch (error: any) {
+      setError(error?.message || "Invalid email or password");
       console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const register = async () => {
     try {
       setIsLoading(true);
@@ -56,10 +56,12 @@ const LoginPage = () => {
         registerPassword,
         registerUsername
       );
+      
       await account.createEmailPasswordSession(registerEmail, registerPassword);
+      await checkUser(); // Check user after registration and session creation
       router.push('/editor');
-    } catch (error) {
-      setError("Registration failed. Please try again.");
+    } catch (error: any) {
+      setError(error?.message || "Registration failed. Please try again.");
       console.error("Register error:", error);
     } finally {
       setIsLoading(false);
