@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { account, ID } from "../../lib/appwrite";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -13,10 +14,10 @@ import {
   CardTitle,
   CardDescription,
 } from "../../components/ui/card";
-import { LogOut, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const LoginPage = () => {
-  const [loggedInUser, setLoggedInUser] = useState(null);
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isRegister, setIsRegister] = useState(false);
@@ -30,14 +31,12 @@ const LoginPage = () => {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
 
-  const login = async () => {
+    const login = async () => {
     try {
       setIsLoading(true);
       setError("");
-      // First get the user's email using username
       await account.createEmailPasswordSession(loginEmail, loginPassword);
-      const user = await account.get();
-      setLoggedInUser(user);
+      router.push('/');
     } catch (error) {
       setError("Invalid email or password");
       console.error("Login error:", error);
@@ -45,11 +44,12 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-
+  
   const register = async () => {
     try {
       setIsLoading(true);
       setError("");
+      
       await account.create(
         ID.unique(),
         registerEmail,
@@ -57,8 +57,7 @@ const LoginPage = () => {
         registerUsername
       );
       await account.createEmailPasswordSession(registerEmail, registerPassword);
-      const user = await account.get();
-      setLoggedInUser(user);
+      router.push('/editor');
     } catch (error) {
       setError("Registration failed. Please try again.");
       console.error("Register error:", error);
@@ -66,52 +65,6 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-
-  const logout = async () => {
-    try {
-      setIsLoading(true);
-      await account.deleteSession("current");
-      setLoggedInUser(null);
-    } catch (error: unknown) {
-      setError("Logout failed");
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (loggedInUser) {
-    return (
-      <Card className="w-full max-w-md mx-auto mt-8">
-        <CardHeader>
-          <CardTitle>Welcome!</CardTitle>
-          <CardDescription>
-            You are logged in as {loggedInUser.name}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            variant="destructive"
-            onClick={logout}
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging out...
-              </>
-            ) : (
-              <>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
