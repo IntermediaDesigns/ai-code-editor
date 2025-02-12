@@ -1,29 +1,31 @@
 // app/(auth)/login/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useAuth } from '../../components/providers/AuthProvider';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Alert, AlertDescription } from '../../components/ui/alert';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { login } from "../../lib/auth";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
-      await signIn(email, password);
-    } catch {
-      setError('Invalid email or password');
+      await login(email, password);
+      router.push("/editor");
+    } catch (error: any) {
+      setError(error.message || "Failed to login");
     } finally {
       setIsLoading(false);
     }
@@ -32,8 +34,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-8">Login to AI Code Editor</h1>
-        
+        <h1 className="text-2xl font-bold text-center mb-8">
+          Login to AI Code Editor
+        </h1>
+
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>{error}</AlertDescription>
@@ -55,7 +59,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium mb-1"
+            >
               Password
             </label>
             <Input
@@ -67,17 +74,13 @@ export default function LoginPage() {
             />
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Signing in..." : "Sign in"}
           </Button>
         </form>
 
         <p className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{' '}
+          Don't have an account?{" "}
           <Link href="/register" className="text-blue-500 hover:text-blue-600">
             Register
           </Link>

@@ -2,8 +2,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '../../components/providers/AuthProvider';
+import { createAccount } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Alert, AlertDescription } from '../../components/ui/alert';
@@ -14,7 +15,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,9 +23,10 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-    } catch (error: FirebaseError | Error) {
-      setError(error.message || 'An error occurred during registration');
-      setError(error.message || 'An error occurred during registration');
+      await createAccount(email, password, name);
+      router.push('/editor');
+    } catch (error: any) {
+      setError(error.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
