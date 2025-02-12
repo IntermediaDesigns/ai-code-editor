@@ -1,5 +1,5 @@
 // lib/ai-service.ts
-import { functions } from "../app/lib/appwrite";
+import { functions } from "./appwrite";
 
 interface AIResponse {
   message: string;
